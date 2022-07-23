@@ -8,4 +8,5 @@ a) To a raw 'lake' style layer using the Config file
 b) Establishing the scripts used to create valuable views within SQL Server
 c) To a presenting reational layer with additional flows, influenced by SQL Server views
 4. Running checks and validating data
-5. Displaying a data model in the Silver layer
+5. Displaying a data vault model in the Silver layer
+6. Displaying a star schema model in the Gold Layer 
