@@ -1,6 +1,6 @@
 We use LogAnalytics Workspaces and Application Insights as our logging service. 
 
-Logging:
+LOGGING:
 Service telemetry is sent to LogAnalytics and application level logging is sent to Application Insights
 Both logging services provide data to Azure monitor, from where we can run standardised queries, configure alerts and lay the foundation for dashboards
 
@@ -46,9 +46,10 @@ Infrastructure is defined in an ARM template, a sample of the configuration for 
     }
 }
 The exact detail of what is logged can be controlled with the metrics and logs properties and by default all information is logged for each service. 
-This allows operational teams to identify what information is useful to them and then iteratively adjust the infrastructure templates to only capture what is necessary. 
-Data Pieline Logging 
+This allows operational teams to identify useful information, then iteratively adjust the infrastructure templates to capture what is necessary. 
 
+
+Data Pipeline Logging:
 Code that is written to run in Databricks uses the opencensus package to redirect logs to Application Insights. 
 This is a standard Python package and the recommended interface to Application Insights from Python. 
 More details can be found (https://docs.microsoft.com/en-us/azure/azure-monitor/app/opencensus-python).
@@ -60,7 +61,6 @@ from opencensus.ext.azure.log_exporter import AzureLogHandler
 
 logger = logging.getLogger(__name__)
 
-# TODO: replace the all-zero GUID with your instrumentation key.
 logger.addHandler(AzureLogHandler(
     connection_string='InstrumentationKey=00000000-0000-0000-0000-000000000000')
 )
@@ -78,26 +78,33 @@ def main():
 
 if __name__ == "__main__":
     main()
-Monitoring
-Once data has been captured by Azure Monitor, queries can be written to identify significant events. These are expressed using KQL, details of which can be found here .
 
-The Azure portal offers a web interface to Azure Monitor where KQL queries can be written and executed against logged data. This allows ad-hoc queries to be created to analyse different services and pipelines.
+
+
+
+
+MONITORING:
+Once data has been captured by Azure Monitor, queries can be written to identify significant events. 
+These are expressed using KQL (Kusto Query Language), details of which can be found here: (https://docs.microsoft.com/en-us/azure/data-explorer/kql-quick-reference).
+
+The Azure portal offers a web interface to Azure Monitor where KQL queries can be written and executed against logged data. 
+This allows ad-hoc queries to be created to analyse different services and pipelines.
 
 The following code shows an example query that identifies any errors arising from Data Factory pipelines:
 
 ADFPipelineRun
 | where Status == "Failed"
 | project TimeGenerated, DataFactory=split(ResourceId, '/')[8], PipelineName, Status, RunId 
-Once this query has been created in Azure Monitor, there is an option available in the GUI to pin the output to a Dashboard. This can either be tabular or a chart:
+Once this query has been created in Azure Monitor, there is an option available in the GUI to pin the output to a Dashboard. This can either be tabular or a chart
 
-image.png
+Once a dashboard has been created in the Azure Portal, the ARM template representing the dashboard can be exported, 
+parameterised and version controlled to allow it to be rolled out across different environments and pipelines.
 
-Once a dashboard has been created in the Azure Portal, the ARM template representing the dashboard can be exported, parameterised and version controlled to allow it to be rolled out across different environments and pipelines.
-
-Alerting
+ALERTING:
 Alerting in EDP is also handled by the Azure platform and Azure Monitor.
 
-Here, action groups can be defined that will be notified when a particular condition is met. The following ARM resource shows an action group that is configured to send email addresses to a set of receivers:
+Here, action groups can be defined that will be notified when a particular condition is met. 
+The following ARM resource shows an action group that is configured to send email addresses to a set of receivers:
 
 {
     "apiVersion": "2018-03-01",
@@ -112,7 +119,9 @@ Here, action groups can be defined that will be notified when a particular condi
         "webhookReceivers": []
     }
 }
-Once an action group has been defined, a scheduled query rule can be created that will periodically invoke a KQL query against Azure Monitor and use the results to determine whether to notify an action group or not. The following ARM resource shows a scheduled query rule:
+Once an action group has been defined, a scheduled query rule can be created that will periodically invoke a KQL query against Azure Monitor 
+
+We can then use the results to determine whether to notify an action group or not. The following ARM resource shows a scheduled query rule:
 
 {
     "apiVersion": "2018-04-16",
@@ -150,11 +159,13 @@ Once an action group has been defined, a scheduled query rule can be created tha
 }
 The scheduled query rule allows different parameters to be configured:
 
-Name	Purpose
-Query	The query to be executed. The results returned can be used to trigger an action group.
-Frequency In Minutes	How often to execute the query.
-Time Window In Minutes	How much data to include in the query.
-Severity	The severity of the alert being raised if triggered.
-Threshold Operator	The type of comparison to carry out with the query results.
-Threshold	The threshold before the action group is triggered.
-The query above is configured to run every 5 minutes and to look at the preceeding 5 minutes worth of data. If the results of the query exceeds the threshold of 0, (i.e., there are errors reported), then the action group will be notified.
+Name:  Purpose
+Query:  The query to be executed. The results returned can be used to trigger an action group.
+Frequency In Minutes:  How often to execute the query.
+Time Window In Minutes:  How much data to include in the query.
+Severity:  The severity of the alert being raised if triggered.
+Threshold Operator:  The type of comparison to carry out with the query results.
+Threshold:  The threshold before the action group is triggered.
+
+The query above is configured to run every 5 minutes and to look at the preceeding 5 minutes worth of data. 
+If the results of the query exceeds the threshold of 0, (i.e., there are errors reported), then the action group will be notified.
