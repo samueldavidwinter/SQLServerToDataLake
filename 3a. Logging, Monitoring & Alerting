@@ -1,5 +1,6 @@
 We use LogAnalytics Workspaces and Application Insights as our logging service. 
 
+
 LOGGING:
 Service telemetry is sent to LogAnalytics and application level logging is sent to Application Insights
 Both logging services provide data to Azure monitor, from where we can run standardised queries, configure alerts and lay the foundation for dashboards
@@ -99,6 +100,9 @@ Once this query has been created in Azure Monitor, there is an option available 
 
 Once a dashboard has been created in the Azure Portal, the ARM template representing the dashboard can be exported, 
 parameterised and version controlled to allow it to be rolled out across different environments and pipelines.
+
+
+
 
 ALERTING:
 Alerting in EDP is also handled by the Azure platform and Azure Monitor.
