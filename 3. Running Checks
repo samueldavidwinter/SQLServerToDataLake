@@ -13,6 +13,102 @@ We would add an aggregated transformation activity with the following code:
 
 aggregate(groupBy(mycols = sha2(256,columns())),
     each(match(true()), $$ = first($$))) ~> DistinctRows
-    
+
+III. Check row count is maintained across the EDP layers via py script run in databricks:
+SELECT  a.genericname
+        ,a.rawvol
+        ,b.vaultvol
+        ,CASE 
+            WHEN (a.rawvol - b.vaultvol) in (-1, 0, 1) THEN 'GOOD'
+            WHEN (a.rawvol - b.vaultvol) not in (-1, 0, 1)  THEN 'NOT GOOD'
+            ELSE 'No test Avaliable'
+        END as raw_to_vault
+          ,CASE 
+             WHEN (a.rawvol - c.reportvol) in (-1, 0, 1) THEN 'GOOD'
+             WHEN (a.rawvol - c.reportvol) not in (-1, 0, 1)  THEN 'NOT GOOD'
+             ELSE 'No test Avaliable'
+           END as raw_to_report
+           ,CASE 
+             WHEN (b.vaultvol - c.reportvol) in (-1, 0, 1) THEN 'GOOD'
+             WHEN (b.vaultvol - c.reportvol) not in (-1, 0, 1)  THEN 'NOT GOOD'
+             ELSE 'No test Avaliable'
+           END as vault_to_report
+FROM	( --raw layer
+		SELECT 1 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,   'pesnion_source'			AS rawent, 'pesnion'				AS genericname FROM raw_dr_hub.customerstatepension_base
+UNION	SELECT 2 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,   'budgetsolution_source'		AS rawent, 'budgetsolution'			AS genericname FROM raw_dr_hub.budgetsolution_base
+UNION	SELECT 3 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,   'address_source'			AS rawent, 'address'				as genericname FROM raw_dr_hub.address_base
+UNION	SELECT 4 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,   'budgetsolcustdet_source'	AS rawent, 'budgetsolcustdet'		AS genericname FROM raw_dr_hub.budgetsolutioncustomerdetails_base
+UNION	SELECT 5 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,   'case_source'			 	AS rawent, 'case'					as genericname FROM raw_dr_hub.case_base
+UNION	SELECT 6 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,   'property_source'			AS rawent, 'property'				as genericname FROM raw_dr_hub.property_base
+UNION	SELECT 7 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,   'contact_source'			AS rawent, 'contact'				as genericname FROM raw_dr_hub.contact_pii
+UNION	SELECT 8 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,   'customer_source'			AS rawent, 'customer'				as genericname FROM raw_dr_hub.customer_base
+UNION	SELECT 9 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,   'retirementasset_source'	AS rawent, 'retirementasset'		as genericname FROM raw_dr_hub.retirementasset_base
+UNION	SELECT 10 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,  'definedbenefit_source'		AS rawent, 'definedbenefit'			as genericname FROM raw_dr_hub.definedbenefit_base
+UNION	SELECT 11 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,  'employment_source'			AS rawent, 'employment'				as genericname FROM raw_dr_hub.employment_base
+UNION	SELECT 12 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,  'customerrisk_source'		AS rawent, 'customerrisk'			as genericname FROM raw_dr_hub.customerriskscore_base
+UNION	SELECT 13 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,  'page_source'				AS rawent, 'page'					as genericname FROM raw_dr_hub.page_base
+UNION	SELECT 14 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,  'role_source'				AS rawent, 'role'					as genericname FROM raw_dr_hub.role_base
+UNION	SELECT 15 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,  'scheme_source'				AS rawent, 'scheme'					as genericname FROM raw_dr_hub.scheme_base
+UNION	SELECT 16 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,  'sequencetype_source'		AS rawent, 'sequencetype'			as genericname FROM raw_dr_hub.sequencetype_base
+UNION	SELECT 17 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,  'casesessionuseragent_source' AS rawent, 'casesessionuseragent'	as genericname FROM raw_dr_hub.casesessionuseragent_base
+UNION	SELECT 18 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,  'user_source'				AS rawent, 'user'					AS genericname FROM raw_dr_hub.user_base
+UNION	SELECT 19 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,  'workflowstatus_source'		AS rawent, 'workflowstatus'			AS genericname FROM raw_dr_hub.workflowstatus_base
+UNION	SELECT 20 AS rawid, 1 AS rawlayer, COUNT(1) AS rawvol,  'type_base_source'			AS rawent, 'type_base'				AS genericname FROM raw_dr_hub.type_base
+
+		) AS a
+		LEFT JOIN	( --Vault layer
+					SELECT 1 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol,  'pesnion_sourc'			AS vaultent, 'pesnion'				as genericname FROM raw_vault.sat_customer_pension_dr_detail
+			UNION	SELECT 2 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol,  'budgetsolution_vault'		AS vaultent, 'budgetsolution'		as genericname FROM raw_vault.sat_budget_solutions_dr_detail
+			UNION	SELECT 3 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol,  'address_vault'			AS vaultent, 'address'				as genericname FROM raw_vault.sat_address_dr_detail
+			--UNION	SELECT 4 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol,  'budgetsolcustdet_vault'	AS vaultent, 'budgetsolcustdet'	AS genericname FROM raw_vault.sat_budget_solutions_customer_details_dr_detail
+            union
+              SELECT 4 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol,  'budgetsolcustdet_vault'	AS vaultent, 'budgetsolcustdet'	AS genericname 
+              FROM   (
+                      SELECT
+                      *,
+                      ROW_NUMBER() OVER(
+                                      PARTITION BY bk_budget_solution_customer_details_id, bk_budget_solution_id
+                                      ORDER BY valid_from DESC
+                                                        ) rn1
+                      FROM raw_vault.sat_budget_solutions_customer_details_dr_detail
+                      )
+              WHERE rn1 = 1
+            
+            
+            
+			UNION	SELECT 5 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol,  'case_vault'				AS vaultent, 'case'					as genericname FROM raw_vault.sat_case_dr_detail
+			UNION	SELECT 6 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol,  'property_vault'			AS vaultent, 'property'				as genericname FROM raw_vault.sat_case_property_dr_detail
+			UNION	SELECT 7 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol,  'contact_vault'			AS vaultent, 'contact'				as genericname FROM raw_vault.sat_contact_dr_detail
+			UNION	SELECT 8 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol,  'customer_vault'			AS vaultent, 'customer'				as genericname FROM raw_vault.sat_customer_dr_detail
+			UNION	SELECT 9 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol,  'retirementasset_vault'	AS vaultent, 'retirementasset'		as genericname FROM raw_vault.sat_customer_asset_dr_detail
+			UNION	SELECT 10 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol, 'definedbenefit_vault'		AS vaultent, 'definedbenefit'		as genericname FROM raw_vault.sat_customer_definedbenefit_dr_detail
+			UNION	SELECT 11 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol, 'employment_vault'			AS vaultent, 'employment'			as genericname FROM raw_vault.sat_customer_employment_dr_detail
+			UNION	SELECT 12 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol, 'customerrisk_vault'		AS vaultent, 'customerrisk'			as genericname FROM raw_vault.sat_customer_risk_score_dr_detail
+			UNION	SELECT 13 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol, 'page_vault'				AS vaultent, 'page'					AS genericname FROM raw_vault.sat_page_dr_detail
+			UNION	SELECT 14 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol, 'role_vault'				AS vaultent, 'role'					AS genericname FROM raw_vault.sat_role_dr_detail
+			UNION	SELECT 15 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol, 'scheme_vault'				AS vaultent, 'scheme'				AS genericname FROM raw_vault.sat_scheme_dr_detail
+			UNION	SELECT 16 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol, 'sequencetype_vault'		AS vaultent, 'sequencetype'			as genericname FROM raw_vault.sat_sequence_type_dr_detail
+			UNION	SELECT 17 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol, 'casesessionuseragent_vault'AS vaultent, 'casesessionuseragent'AS genericname FROM raw_vault.sat_session_user_agent_dr_detail
+			UNION	SELECT 18 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol, 'user_vault'				AS vaultent, 'user'					AS genericname FROM raw_vault.sat_user_dr_detail
+			UNION	SELECT 19 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol, 'workflowstatus_vault'		AS vaultent, 'workflowstatus'		as genericname FROM raw_vault.sat_workflow_status_dr_detail
+			UNION	SELECT 20 AS vaultid, 2 AS vaultlayer, COUNT(1) AS vaultvol, 'type_base_vault'			AS vaultent, 'type_base'			AS genericname FROM raw_vault.sat_workflow_type_dr_detail
+			
+
+					) AS b
+				ON  a.rawid = b.vaultid
+ 		LEFT JOIN	(--Report layer 
+ 					SELECT 1 AS reportid, 3 AS reportlayer, COUNT(1) AS reportvol,  'pesnion_sourc'				AS reportent, 'pesnion'			 AS genericname FROM dr_release.fact_pension
+ 			UNION	SELECT 2 AS reportid, 3 AS reportlayer, COUNT(1) AS reportvol,  'budgetsolution_report'		AS reportent, 'budgetsolution'	 AS genericname FROM dr_release.fact_budget
+ 			UNION	SELECT 3 AS reportid, 3 AS reportlayer, COUNT(1) AS reportvol,  'address_report'			AS reportent, 'address'			 AS genericname FROM dr_release.dim_address
+ --UNION	SELECT 4 AS reportid, 3 AS reportlayer, COUNT(1) AS reportvol,  'budgetsolcustdet_report'	AS reportent, 'budgetsolcustdet' AS genericname FROM dr_release.dim_budget_solution --this is actually budget solution
+ 			UNION	SELECT 5 AS reportid, 3 AS reportlayer, COUNT(1) AS reportvol,  'case_report'				AS reportent, 'case'			 AS genericname FROM dr_release.dim_case
+ 			UNION	SELECT 6 AS reportid, 3 AS reportlayer, COUNT(1) AS reportvol,  'property_report'			AS reportent, 'property'		 AS genericname FROM dr_release.fact_property
+ 			UNION	SELECT 7 AS reportid, 3 AS reportlayer, COUNT(1) AS reportvol,  'contact_report'			AS reportent, 'contact'			 as genericname FROM dr_release.dim_contact
+ 			UNION	SELECT 8 AS reportid, 3 AS reportlayer, COUNT(1) AS reportvol,  'customer_report'			AS reportent, 'customer'		 as genericname FROM dr_release.dim_customer
+ 			UNION	SELECT 9 AS reportid, 3 AS reportlayer, COUNT(1) AS reportvol,  'retirementasset_report'	AS reportent, 'retirementasset'	 as genericname FROM dr_release.fact_asset
+ 			UNION	SELECT 10 AS reportid, 3 AS reportlayer, COUNT(1) AS reportvol, 'definedbenefit_report'		AS reportent, 'definedbenefit'	 AS genericname FROM dr_release.fact_defined_benefit
+ 			UNION	SELECT 11 AS reportid, 3 AS reportlayer, COUNT(1) AS reportvol, 'employment_report'			AS reportent, 'employment'		 as genericname FROM dr_release.fact_employment
+--  					) AS c
+
 
     
