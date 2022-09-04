@@ -1,0 +1,16 @@
+After we design our mapping specs, I would 
+
+I. Use two WSL commands: 
+
+1. python common_metadata_services/cfw/mapping_parser/mapping_parser.py dr secure_to_raw --check-mappings  
+
+2. python common_metadata_services/cfw/mapping_parser/mapping_parser.py dr query_to_report --check-sql  
+
+To check the integrety of the mapping parser generally and SQL specifically
+
+II. Check for duplicated rows and nulls in datafactory
+We would add an aggregated transformation activity with the following code:
+
+aggregate(groupBy(mycols = sha2(256,columns())),
+    each(match(true()), $$ = first($$))) ~> DistinctRows
+    
