@@ -10,3 +10,5 @@ c) To a presenting reational layer with additional flows, influenced by SQL Serv
 4. Running checks and validating data from the command line
 5. Displaying a data vault model in the Silver layer
 6. Displaying a star schema model in the Gold Layer 
+
+An overview of Azure cloud migration can be seen here: https://medium.com/@samueldavidwinter/data-engineering-pipelines-a-reference-62763da9f0ff
