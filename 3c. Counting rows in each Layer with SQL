@@ -1,6 +1,4 @@
-Checking the counts of data in each layer 
-
---TEST the layers counts
+**Checking the counts of data in each layer**
 
 SELECT  a.genericname
         ,a.rawvol
